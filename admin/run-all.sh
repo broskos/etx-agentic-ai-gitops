@@ -85,4 +85,87 @@ echo "================================================================"
 echo "All scripts completed successfully!"
 echo "================================================================"
 
+echo "================================================================"
+echo "Starting verification process"
+echo "================================================================"
+echo
+
+echo "Checking if all ai-agent deployments have been created..."
+echo "Expected: ${NUM_USERS} deployment(s)"
+echo
+
+TIMEOUT=300  # 5 minutes in seconds
+INTERVAL=10  # Check every 10 seconds
+ELAPSED=0
+
+while [ $ELAPSED -lt $TIMEOUT ]; do
+    DEPLOYMENT_COUNT=$(oc get deploy -l app.kubernetes.io/instance=ai-agent -A --no-headers 2>/dev/null | wc -l | tr -d ' ')
+    
+    echo "Current deployment count: ${DEPLOYMENT_COUNT}/${NUM_USERS}"
+    
+    if [ "${DEPLOYMENT_COUNT}" -eq "${NUM_USERS}" ]; then
+        echo "✓ All ${NUM_USERS} ai-agent deployment(s) have been created!"
+        echo
+        break
+    fi
+    
+    if [ $ELAPSED -lt $TIMEOUT ]; then
+        echo "Waiting for deployments to be created... (${ELAPSED}s/${TIMEOUT}s)"
+        sleep $INTERVAL
+        ELAPSED=$((ELAPSED + INTERVAL))
+    fi
+done
+
+FINAL_COUNT=$(oc get deploy -l app.kubernetes.io/instance=ai-agent -A --no-headers 2>/dev/null | wc -l | tr -d ' ')
+
+if [ "${FINAL_COUNT}" -ne "${NUM_USERS}" ]; then
+    echo
+    echo "✗ Timeout: Expected ${NUM_USERS} deployment(s), but found ${FINAL_COUNT}"
+    echo "Aborting verification."
+    exit 1
+fi
+
+echo "Waiting for ai-agent deployments to become available in all namespaces..."
+echo "This may take up to 20 minutes..."
+echo
+
+if oc wait --for=condition=Available deploy -l app.kubernetes.io/instance=ai-agent -A --timeout=20m; then
+    echo
+    echo "✓ All ai-agent deployments are available!"
+    echo
+else
+    echo
+    echo "✗ Verification failed: Some ai-agent deployments are not available"
+    echo
+    echo "Checking deployment status in user namespaces..."
+    echo
+    
+    # Check each user namespace individually for better error reporting
+    FAILED_NAMESPACES=0
+    for i in $(seq 1 ${NUM_USERS}); do
+        NAMESPACE="user${i}-ai-agent"
+        if oc get namespace "${NAMESPACE}" &>/dev/null; then
+            if oc wait --for=condition=Available deploy -l app.kubernetes.io/instance=ai-agent -n "${NAMESPACE}" --timeout=30s &>/dev/null; then
+                echo "  ✓ ${NAMESPACE}: ai-agent deployment is available"
+            else
+                echo "  ✗ ${NAMESPACE}: ai-agent deployment is not available"
+                FAILED_NAMESPACES=$((FAILED_NAMESPACES + 1))
+            fi
+        else
+            echo "  ⚠ ${NAMESPACE}: namespace does not exist"
+        fi
+    done
+    
+    if [ $FAILED_NAMESPACES -gt 0 ]; then
+        echo
+        echo "Error: ${FAILED_NAMESPACES} namespace(s) have unavailable ai-agent deployments"
+        exit 1
+    fi
+fi
+
+echo "================================================================"
+echo "Verification completed successfully!"
+echo "================================================================"
+echo
+
 exit 0
