@@ -1,5 +1,5 @@
 ---
-namespace: userX-ai-agent
+namespace: user6-ai-agent
 registry: image-registry.openshift-image-registry.svc:5000
 application_name: ai-agent
 
