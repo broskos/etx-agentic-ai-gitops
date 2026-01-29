@@ -2,7 +2,7 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   generateName: java-app-build-run-
-  namespace: user${YOUR_USER_NUMBER}-ai-agent
+  namespace: user6-ai-agent
 spec:
   taskRunTemplate:
     serviceAccountName: pipeline
@@ -10,7 +10,7 @@ spec:
     name: java-app-build
   params:
     - name: NAMESPACE
-      value: user${YOUR_USER_NUMBER}-ai-agent
+      value: user6-ai-agent
   workspaces:
     - name: shared-workspace
       volumeClaimTemplate:

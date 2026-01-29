@@ -2,7 +2,7 @@ apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: java-app-build
-  namespace: user${YOUR_USER_NUMBER}-ai-agent
+  namespace: user6-ai-agent
 spec:
   params:
   - default: image-registry.openshift-image-registry.svc:5000
