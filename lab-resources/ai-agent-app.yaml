@@ -2,16 +2,16 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: ai-agent
-  namespace: ${NAMESPACE}
+  namespace: user6-ai-agent
 spec:
   project: default
   source:
     path: agent/chart
-    repoURL: ${GITHUB_REPO}
+    repoURL: https://github.com/broskos/etx-agentic-ai-gitops.git
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: ${NAMESPACE}
+    namespace: user6-ai-agent
   syncPolicy:
     automated:
       prune: true
